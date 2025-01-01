@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Shooting Game Ver1.6</title>
+  <title>Bloly Shooting Game</title>
   <style>
     body, html {
       margin: 0;
@@ -15,9 +15,9 @@
       background-color: black;
     }
     #scoreContainer {
-      font-size: 20px;
+      font-size: 40px;
       background-color: rgba(255, 255, 255, 0.7);
-      padding: 10px;
+      padding: 20px;
       position: fixed; /* スコアとスタートボタンを画面上部に固定 */
       top: 0;
       width: 100%;
@@ -46,14 +46,14 @@
       object-fit: contain; /* 縦横比を維持する */
     }
     #finalScore {
-      font-size: 30px;
+      font-size: 60px;
       color: red;
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       background-color: rgba(255, 255, 255, 0.7);
-      padding: 10px;
+      padding: 20px;
       display: none;
       width: 100%;
       text-align: center;
@@ -160,8 +160,8 @@
     const shipImage = new Image();
     shipImage.src = 'player.png';
 
-    const shipWidth = 50;
-    const shipHeight = 50;
+    const shipWidth = 200;
+    const shipHeight = 160;
     let shipX = canvas.width / 2 - shipWidth / 2;
     let shipY = canvas.height - shipHeight - 10;
 
