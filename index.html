@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Bloly Shooting Game</title>
+  <title>ぶろりーをうちおとせ</title>
   <style>
     body, html {
       margin: 0;
@@ -15,7 +15,7 @@
       background-color: black;
     }
     #scoreContainer {
-      font-size: 40px;
+      font-size: 100px;
       background-color: rgba(255, 255, 255, 0.7);
       padding: 20px;
       position: fixed; /* スコアとスタートボタンを画面上部に固定 */
@@ -72,12 +72,12 @@
       background-color: rgba(0, 0, 0, 0.5); /* ボタンエリアの背景色を追加 */
     }
     .control-button {
-      width: 60px;
-      height: 60px;
+      width: 200px;
+      height: 200px;
       background-color: rgba(255, 255, 255, 0.7);
       border: none;
       border-radius: 50%;
-      font-size: 20px;
+      font-size: 100px;
       font-weight: bold;
       color: black;
       display: flex;
@@ -85,7 +85,7 @@
       align-items: center;
     }
     #moveControl {
-      width: 140px;
+      width: 280px;
       display: flex;
       justify-content: space-between;
     }
@@ -107,11 +107,11 @@
 <body>
   <div id="scoreContainer">
     <div id="scoreDisplay">スコア: 0</div>
-    <button id="startButton" onclick="startGame()">START</button>
+    <button id="startButton" onclick="startGame()">すたーと</button>
   </div>
   <div id="gameContainer">
     <canvas id="gameCanvas" width="480" height="600"></canvas>
-    <div id="finalScore">GAME OVER<br>SCORE: 0</div>
+    <div id="finalScore">しっぱい(つд⊂)ｴｰﾝ<br>スコア: 0</div>
   </div>
   <div id="controls">
     <button class="control-button" id="fireButton">&#x1F52B;</button>
@@ -161,7 +161,7 @@
     shipImage.src = 'player.png';
 
     const shipWidth = 200;
-    const shipHeight = 160;
+    const shipHeight = 180;
     let shipX = canvas.width / 2 - shipWidth / 2;
     let shipY = canvas.height - shipHeight - 10;
 
@@ -438,7 +438,7 @@
 
     function displayFinalScore() {
       const finalScoreElement = document.getElementById("finalScore");
-      finalScoreElement.innerText = `GAME OVER\nSCORE: ${score}`;
+      finalScoreElement.innerText = `しっぱい(つд⊂)ｴｰﾝ\nスコア: ${score}`;
       finalScoreElement.style.display = "block";
     }
 
