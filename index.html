@@ -12,72 +12,74 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      background-color: black;
-    }
-    #scoreContainer {
-      font-size: 100px;
-      background-color: rgba(255, 255, 255, 0.7);
-      padding: 20px;
-      position: fixed; /* スコアとスタートボタンを画面上部に固定 */
-      top: 0;
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      box-sizing: border-box;
-      z-index: 10; /* スコアとスタートボタンがキャンバスの上に表示されるようにする */
-    }
-    #startButton {
-      flex: none;
+      background-image: url('https://tokodomo.xyz/wp-content/uploads/2024/07/shooting_ver1.7_background.webp');
+      background-size: cover;
+      background-position: center;
     }
     #gameContainer {
       position: relative;
       width: 100%;
-      height: calc(100% - 160px); /* 上下の帯分の高さを引く */
-      margin-top: 60px; /* 上部の帯の高さ */
-      margin-bottom: 100px; /* 下部の帯の高さ */
+      flex-grow: 1;
       display: flex;
       justify-content: center;
       align-items: center;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 5;
     }
     #gameCanvas {
       width: 100%;
       height: 100%;
       display: block;
-      object-fit: contain; /* 縦横比を維持する */
+      object-fit: contain;
+    }
+    #scoreContainer {
+      font-size: 20px;
+      background-color: rgba(255, 255, 255, 0.7);
+      padding: 10px;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+    #startButton {
+      flex: none;
     }
     #finalScore {
-      font-size: 60px;
+      font-size: 30px;
       color: red;
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       background-color: rgba(255, 255, 255, 0.7);
-      padding: 20px;
+      padding: 10px;
       display: none;
       width: 100%;
       text-align: center;
     }
     #controls {
-      position: fixed; /* ボタンを画面下部に固定 */
+      position: fixed;
       bottom: 0;
       width: 100%;
       display: flex;
       flex-direction: row;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 20px; /* ボタンをキャンバスから離すためにパディングを追加 */
+      padding: 10px 20px;
       box-sizing: border-box;
-      z-index: 10; /* ボタンがキャンバスの上に表示されるようにする */
-      background-color: rgba(0, 0, 0, 0.5); /* ボタンエリアの背景色を追加 */
+      z-index: 10;
+      background-color: rgba(0, 0, 0, 0.5);
     }
     .control-button {
-      width: 200px;
-      height: 200px;
+      width: 60px;
+      height: 60px;
       background-color: rgba(255, 255, 255, 0.7);
       border: none;
       border-radius: 50%;
-      font-size: 100px;
+      font-size: 20px;
       font-weight: bold;
       color: black;
       display: flex;
@@ -85,7 +87,7 @@
       align-items: center;
     }
     #moveControl {
-      width: 280px;
+      width: 140px;
       display: flex;
       justify-content: space-between;
     }
@@ -102,16 +104,21 @@
       border-top-right-radius: 50%;
       border-bottom-right-radius: 50%;
     }
+    @media (min-width: 601px) {
+      #controls {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
   <div id="scoreContainer">
-    <div id="scoreDisplay">スコア: 0</div>
+    <div id="scoreDisplay">とくてん: 0</div>
     <button id="startButton" onclick="startGame()">すたーと</button>
   </div>
   <div id="gameContainer">
-    <canvas id="gameCanvas" width="480" height="600"></canvas>
-    <div id="finalScore">しっぱい(つд⊂)ｴｰﾝ<br>スコア: 0</div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="finalScore">しっぱい(つд⊂)ｴｰﾝ<br>てんすう: 0</div>
   </div>
   <div id="controls">
     <button class="control-button" id="fireButton">&#x1F52B;</button>
@@ -127,12 +134,21 @@
 
     function resizeCanvas() {
       const container = document.getElementById('gameContainer');
+      const controlsHeight = window.matchMedia("(max-width: 600px)").matches ? document.getElementById('controls').offsetHeight : 0;
       const width = container.clientWidth;
-      const height = width * (600 / 480);
-      canvas.width = width;
+      const height = container.clientHeight - controlsHeight;
       canvas.height = height;
+      canvas.width = width;
+
+      // 自機の位置を設定
+      const bottomOffset = 20; // 底からのオフセット（20px）
+      if (window.matchMedia("(max-width: 600px)").matches) {
+        shipY = canvas.height - shipHeight - bottomOffset - 20; // 追加の20pxオフセット
+      } else {
+        const canvasRect = canvas.getBoundingClientRect();
+        shipY = window.innerHeight - canvasRect.top - shipHeight - bottomOffset - 20; // PC版: 底からさらに20px上げる
+      }
       shipX = canvas.width / 2 - shipWidth / 2;
-      shipY = canvas.height - shipHeight - 10;
       ship = { x: shipX, y: shipY, width: shipWidth, height: shipHeight, dx: 0 };
     }
 
@@ -160,10 +176,10 @@
     const shipImage = new Image();
     shipImage.src = 'player.png';
 
-    const shipWidth = 200;
-    const shipHeight = 180;
+    const shipWidth = 150;
+    const shipHeight = 130;
     let shipX = canvas.width / 2 - shipWidth / 2;
-    let shipY = canvas.height - shipHeight - 10;
+    let shipY = canvas.height - shipHeight - 20;
 
     let ship = { x: shipX, y: shipY, width: shipWidth, height: shipHeight, dx: 0 };
     let bullets = [];
@@ -282,32 +298,6 @@
       window.addEventListener("gestureend", function(e) {
         e.preventDefault();
       });
-    
-    // スワイプの感度調整用の定数
-    const SWIPE_SENSITIVITY = 0.5;
-
-    moveControl.addEventListener("touchstart", (e) => {
-        // 最初のタッチのみを処理
-        if (e.touches.length === 1) {
-            initialTouchX = e.touches[0].clientX;
-        }
-    });
-
-    moveControl.addEventListener("touchmove", (e) => {
-        e.preventDefault(); // ページスクロールなどを防ぐ
-
-        if (e.touches.length === 1 && initialTouchX !== null) {
-            const currentX = e.touches[0].clientX;
-            const deltaX = currentX - initialTouchX;
-            ship.x += deltaX * SWIPE_SENSITIVITY;
-            // ... (範囲チェック)
-            initialTouchX = currentX;
-        }
-    });
-
-    moveControl.addEventListener("touchend", () => {
-        initialTouchX = null;
-    });
 }
     function drawShip() {
       ctx.drawImage(shipImage, ship.x, ship.y, ship.width, ship.height);
@@ -337,22 +327,26 @@
 
     function drawEnemies() {
       enemies.forEach((enemy, index) => {
+        if (enemy.alpha < 1) {
+          enemy.alpha += 0.02;
+        }
+        ctx.globalAlpha = enemy.alpha;
         ctx.drawImage(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
+        ctx.globalAlpha = 1.0;
         enemy.y += enemy.dy;
-        if (enemy.y > canvas.height) {
+        if (enemy.y > canvas.height + 30) {  // ボタン帯エリアを通過するまで表示
           enemies.splice(index, 1);
         }
-        // 敵機が弾を撃つ
         if (Math.random() < 0.01) {
           enemyBullets.push({ x: enemy.x + enemy.width / 2 - 2.5, y: enemy.y + enemy.height, width: 5, height: 10, dy: 5 });
         }
       });
     }
 
-    function createEnemies() {
+   function createEnemies() {
       if (Math.random() < 0.02) {
         let enemyX = Math.random() * (canvas.width - 30);
-        enemies.push({ x: enemyX, y: 0, width: 30, height: 30, dy: 2 });
+        enemies.push({ x: enemyX, y: -100, width: 30, height: 30, dy: 2, alpha: 0 }); // 画面上部外から出現
       }
     }
 
@@ -458,12 +452,12 @@
     }
 
     function updateScore() {
-      document.getElementById("scoreDisplay").innerText = `スコア: ${score}`;
+      document.getElementById("scoreDisplay").innerText = `てんすう: ${score}`;
     }
 
     function displayFinalScore() {
       const finalScoreElement = document.getElementById("finalScore");
-      finalScoreElement.innerText = `しっぱい(つд⊂)ｴｰﾝ\nスコア: ${score}`;
+      finalScoreElement.innerText = `しっぱい(つд⊂)ｴｰﾝ\nてんすう: ${score}`;
       finalScoreElement.style.display = "block";
     }
 
@@ -472,9 +466,7 @@
         cancelAnimationFrame(animationFrameId);
         return;
       }
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawStars();
-
       if (!gameOver) {
         ship.x += ship.dx;
         if (ship.x < 0) ship.x = 0;
