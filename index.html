@@ -282,8 +282,33 @@
       window.addEventListener("gestureend", function(e) {
         e.preventDefault();
       });
-    }
+    
+    // スワイプの感度調整用の定数
+    const SWIPE_SENSITIVITY = 0.5;
 
+    moveControl.addEventListener("touchstart", (e) => {
+        // 最初のタッチのみを処理
+        if (e.touches.length === 1) {
+            initialTouchX = e.touches[0].clientX;
+        }
+    });
+
+    moveControl.addEventListener("touchmove", (e) => {
+        e.preventDefault(); // ページスクロールなどを防ぐ
+
+        if (e.touches.length === 1 && initialTouchX !== null) {
+            const currentX = e.touches[0].clientX;
+            const deltaX = currentX - initialTouchX;
+            ship.x += deltaX * SWIPE_SENSITIVITY;
+            // ... (範囲チェック)
+            initialTouchX = currentX;
+        }
+    });
+
+    moveControl.addEventListener("touchend", () => {
+        initialTouchX = null;
+    });
+}
     function drawShip() {
       ctx.drawImage(shipImage, ship.x, ship.y, ship.width, ship.height);
     }
