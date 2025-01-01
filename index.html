@@ -237,6 +237,7 @@
       document.getElementById("fireButton").addEventListener("touchstart", fireBullet);
 
       const moveControl = document.getElementById("moveControl");
+      const fireButton = document.getElementById("fireButton");
       let initialTouchX = null;
       const touches = {}; // タッチイベントを管理するためのオブジェクト
 
@@ -265,7 +266,10 @@
           delete touches[touch.identifier];
         }
       });
-
+      fireButton.addEventListener("touchstart", (e) => {
+        fireBullet();
+        e.preventDefault();
+      });
       // 拡大・縮小を防ぐ
       window.addEventListener("touchstart", function(e) {
         if (e.touches.length > 1) {
@@ -283,45 +287,7 @@
         e.preventDefault();
       });
     
-    // スワイプの感度調整用の定数
-    const SWIPE_SENSITIVITY = 0.5;
-
-    moveControl.addEventListener("touchstart", (e) => {
-        // 最初のタッチのみを処理
-        if (e.touches.length === 1) {
-            initialTouchX = e.touches[0].clientX;
-        }
-    });
-
-    moveControl.addEventListener("touchmove", (e) => {
-        e.preventDefault(); // ページスクロールなどを防ぐ
-
-        if (e.touches.length === 1 && initialTouchX !== null) {
-            const currentX = e.touches[0].clientX;
-            const deltaX = currentX - initialTouchX;
-            ship.x += deltaX * SWIPE_SENSITIVITY;
-            // ... (範囲チェック)
-            initialTouchX = currentX;
-        }
-    });
-
-    moveControl.addEventListener("touchend", () => {
-        initialTouchX = null;
-    });
-}
-    function drawShip() {
-      ctx.drawImage(shipImage, ship.x, ship.y, ship.width, ship.height);
-    }
-
-    function drawBullets() {
-      ctx.fillStyle = "#FF0000";
-      bullets.forEach((bullet, index) => {
-        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-        bullet.y += bullet.dy;
-        if (bullet.y < 0) {
-          bullets.splice(index, 1);
-        }
-      });
+   
     }
 
     function drawEnemyBullets() {
