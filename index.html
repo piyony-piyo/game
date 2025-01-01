@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Shooting Game Ver1.6</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background-color: black;
+    }
+    #scoreContainer {
+      font-size: 20px;
+      background-color: rgba(255, 255, 255, 0.7);
+      padding: 10px;
+      position: fixed; /* スコアとスタートボタンを画面上部に固定 */
+      top: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      box-sizing: border-box;
+      z-index: 10; /* スコアとスタートボタンがキャンバスの上に表示されるようにする */
+    }
+    #startButton {
+      flex: none;
+    }
+    #gameContainer {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 160px); /* 上下の帯分の高さを引く */
+      margin-top: 60px; /* 上部の帯の高さ */
+      margin-bottom: 100px; /* 下部の帯の高さ */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #gameCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain; /* 縦横比を維持する */
+    }
+    #finalScore {
+      font-size: 30px;
+      color: red;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 255, 255, 0.7);
+      padding: 10px;
+      display: none;
+      width: 100%;
+      text-align: center;
+    }
+    #controls {
+      position: fixed; /* ボタンを画面下部に固定 */
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px; /* ボタンをキャンバスから離すためにパディングを追加 */
+      box-sizing: border-box;
+      z-index: 10; /* ボタンがキャンバスの上に表示されるようにする */
+      background-color: rgba(0, 0, 0, 0.5); /* ボタンエリアの背景色を追加 */
+    }
+    .control-button {
+      width: 60px;
+      height: 60px;
+      background-color: rgba(255, 255, 255, 0.7);
+      border: none;
+      border-radius: 50%;
+      font-size: 20px;
+      font-weight: bold;
+      color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #moveControl {
+      width: 140px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .connected-button {
+      border-radius: 0;
+      flex-grow: 1;
+      margin: 0;
+    }
+    .connected-button:first-child {
+      border-top-left-radius: 50%;
+      border-bottom-left-radius: 50%;
+    }
+    .connected-button:last-child {
+      border-top-right-radius: 50%;
+      border-bottom-right-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div id="scoreContainer">
+    <div id="scoreDisplay">スコア: 0</div>
+    <button id="startButton" onclick="startGame()">START</button>
+  </div>
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="480" height="600"></canvas>
+    <div id="finalScore">GAME OVER<br>SCORE: 0</div>
+  </div>
+  <div id="controls">
+    <button class="control-button" id="fireButton">&#x1F52B;</button>
+    <div id="moveControl">
+      <button class="control-button connected-button" id="leftButton">&larr;</button>
+      <button class="control-button connected-button" id="rightButton">&rarr;</button>
+    </div>
+  </div>
+  <script>
+    // ゲーム設定
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      const container = document.getElementById('gameContainer');
+      const width = container.clientWidth;
+      const height = width * (600 / 480);
+      canvas.width = width;
+      canvas.height = height;
+      shipX = canvas.width / 2 - shipWidth / 2;
+      shipY = canvas.height - shipHeight - 10;
+      ship = { x: shipX, y: shipY, width: shipWidth, height: shipHeight, dx: 0 };
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('load', resizeCanvas);
+
+    // アニメーションフレームID
+    let animationFrameId;
+
+    // 背景の星を描画する関数
+    function drawStars() {
+      const numStars = 100;
+      for (let i = 0; i < numStars; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const radius = Math.random() * 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+      }
+    }
+
+    // 自機画像の読み込み
+    const shipImage = new Image();
+    shipImage.src = 'player.png';
+
+    const shipWidth = 50;
+    const shipHeight = 50;
+    let shipX = canvas.width / 2 - shipWidth / 2;
+    let shipY = canvas.height - shipHeight - 10;
+
+    let ship = { x: shipX, y: shipY, width: shipWidth, height: shipHeight, dx: 0 };
+    let bullets = [];
+    let enemyBullets = []; // 敵の弾
+    let enemies = [];
+    let explosions = [];
+    let score = 0;
+    let gameOver = false;
+    let gameOverTimeout;
+
+    // 敵機画像の読み込み
+    const enemyImage = new Image();
+    enemyImage.src = 'meteor.png';
+
+    // 爆発エフェクト画像の読み込み
+    const explosionImages = [
+      new Image(),
+      new Image()
+    ];
+    explosionImages[0].src = 'https://tokodomo.xyz/wp-content/uploads/2024/07/shooting_ver1.4_bom1.png'; // 1枚目の画像のパスを指定
+    explosionImages[1].src = 'https://tokodomo.xyz/wp-content/uploads/2024/07/shooting_ver1.4_bom2.png'; // 2枚目の画像のパスを指定
+
+    // 爆発エフェクトの設定
+    const explosionFrameWidth = 64; // 各フレームの幅
+    const explosionFrameHeight = 64; // 各フレームの高さ
+    const explosionFrameCount = 16; // フレーム数
+
+    const keys = {}; // キーの状態を追跡するためのオブジェクト
+
+    document.addEventListener("keydown", keyDownHandler);
+    document.addEventListener("keyup", keyUpHandler);
+    document.addEventListener("keypress", keyPressHandler);
+
+    function keyDownHandler(e) {
+      keys[e.key] = true; // キーの状態を更新
+
+      if (keys["ArrowRight"] && !keys["ArrowLeft"]) {
+        ship.dx = 5;
+      } else if (keys["ArrowLeft"] && !keys["ArrowRight"]) {
+        ship.dx = -5;
+      } else if (keys["ArrowRight"] && keys["ArrowLeft"]) {
+        ship.dx = 0; // 両方のキーが押された場合は停止
+      }
+    }
+
+    function keyUpHandler(e) {
+      keys[e.key] = false; // キーの状態を更新
+
+      if (keys["ArrowRight"] && !keys["ArrowLeft"]) {
+        ship.dx = 5;
+      } else if (keys["ArrowLeft"] && !keys["ArrowRight"]) {
+        ship.dx = -5;
+      } else {
+        ship.dx = 0; // どちらのキーも押されていない場合は停止
+      }
+    }
+
+    function keyPressHandler(e) {
+      if (e.key === "z" || e.key === "Z") {
+        bullets.push({ x: ship.x + ship.width / 2 - 2.5, y: ship.y, width: 5, height: 10, dy: -5 });
+      }
+    }
+
+    function fireBullet(e) {
+      e.preventDefault(); // ここでイベントを防ぐ
+      bullets.push({ x: ship.x + ship.width / 2 - 2.5, y: ship.y, width: 5, height: 10, dy: -5 });
+    }
+
+    // モバイル用ボタンのイベントリスナーを追加
+    if (window.matchMedia("(max-width: 600px)").matches) {
+      document.getElementById("fireButton").addEventListener("touchstart", fireBullet);
+
+      const moveControl = document.getElementById("moveControl");
+      let initialTouchX = null;
+      const touches = {}; // タッチイベントを管理するためのオブジェクト
+
+      moveControl.addEventListener("touchstart", (e) => {
+        for (const touch of e.touches) {
+          touches[touch.identifier] = touch.clientX;
+        }
+      });
+
+      moveControl.addEventListener("touchmove", (e) => {
+        for (const touch of e.touches) {
+          const previousX = touches[touch.identifier];
+          if (previousX !== undefined) {
+            const deltaX = touch.clientX - previousX;
+            ship.x += deltaX * 0.9; // スワイプの移動量を増やす
+            if (ship.x < 0) ship.x = 0;
+            if (ship.x + ship.width > canvas.width) ship.x = canvas.width - ship.width;
+            touches[touch.identifier] = touch.clientX;
+          }
+        }
+        e.preventDefault(); // 拡大・縮小を防ぐ
+      });
+
+      moveControl.addEventListener("touchend", (e) => {
+        for (const touch of e.changedTouches) {
+          delete touches[touch.identifier];
+        }
+      });
+
+      // 拡大・縮小を防ぐ
+      window.addEventListener("touchstart", function(e) {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      window.addEventListener("gesturestart", function(e) {
+        e.preventDefault();
+      });
+      window.addEventListener("gesturechange", function(e) {
+        e.preventDefault();
+      });
+      window.addEventListener("gestureend", function(e) {
+        e.preventDefault();
+      });
+    }
+
+    function drawShip() {
+      ctx.drawImage(shipImage, ship.x, ship.y, ship.width, ship.height);
+    }
+
+    function drawBullets() {
+      ctx.fillStyle = "#FF0000";
+      bullets.forEach((bullet, index) => {
+        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+        bullet.y += bullet.dy;
+        if (bullet.y < 0) {
+          bullets.splice(index, 1);
+        }
+      });
+    }
+
+    function drawEnemyBullets() {
+      ctx.fillStyle = "#FFFF00";
+      enemyBullets.forEach((bullet, index) => {
+        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+        bullet.y += bullet.dy;
+        if (bullet.y > canvas.height) {
+          enemyBullets.splice(index, 1);
+        }
+      });
+    }
+
+    function drawEnemies() {
+      enemies.forEach((enemy, index) => {
+        ctx.drawImage(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
+        enemy.y += enemy.dy;
+        if (enemy.y > canvas.height) {
+          enemies.splice(index, 1);
+        }
+        // 敵機が弾を撃つ
+        if (Math.random() < 0.01) {
+          enemyBullets.push({ x: enemy.x + enemy.width / 2 - 2.5, y: enemy.y + enemy.height, width: 5, height: 10, dy: 5 });
+        }
+      });
+    }
+
+    function createEnemies() {
+      if (Math.random() < 0.02) {
+        let enemyX = Math.random() * (canvas.width - 30);
+        enemies.push({ x: enemyX, y: 0, width: 30, height: 30, dy: 2 });
+      }
+    }
+
+    function drawExplosions() {
+      explosions.forEach((explosion, index) => {
+        const frame = Math.floor(explosion.frame / 4); // フレームをスローダウン
+        if (frame >= explosionFrameCount) {
+          explosions.splice(index, 1); // 爆発アニメーション終了
+          return;
+        }
+
+        // ランダムに爆発画像を選択
+        const image = explosionImages[Math.floor(Math.random() * explosionImages.length)];
+
+        // 爆発画像の中心を敵機の中心に合わせる
+        const explosionX = explosion.x - (explosion.width / 2);
+        const explosionY = explosion.y - (explosion.height / 2);
+
+        ctx.drawImage(
+          image,
+          0, 0, image.width, image.height,
+          explosionX, explosionY, explosion.width, explosion.height
+        );
+        explosion.frame++;
+        explosion.y += 1; // 爆発が少し下に流れるようにする
+      });
+    }
+
+    function detectCollisions() {
+      bullets.forEach((bullet, bulletIndex) => {
+        enemies.forEach((enemy, enemyIndex) => {
+          if (
+            bullet.x < enemy.x + enemy.width &&
+            bullet.x + bullet.width > enemy.x &&
+            bullet.y < enemy.y + enemy.height &&
+            bullet.y + bullet.height > enemy.y
+          ) {
+            bullets.splice(bulletIndex, 1);
+            enemies.splice(enemyIndex, 1);
+            score += 10;
+            updateScore();
+            // ランダムに爆発画像を選択し、爆発の大きさを敵機のサイズにリサイズ
+            const useFirstImage = Math.random() < 0.5;
+            explosions.push({
+              x: enemy.x + enemy.width / 2,
+              y: enemy.y + enemy.height / 2,
+              width: enemy.width,
+              height: enemy.height,
+              frame: 0,
+              useFirstImage
+            });
+          }
+        });
+      });
+
+      enemies.forEach((enemy, enemyIndex) => {
+        if (
+          ship.x < enemy.x + enemy.width &&
+          ship.x + ship.width > enemy.x &&
+          ship.y < enemy.y + enemy.height &&
+          ship.y + ship.height > enemy.y
+        ) {
+          // 自機が敵機にぶつかったときの処理
+          gameOver = true;
+          // ランダムに爆発画像を選択し、爆発の大きさを自機のサイズにリサイズ
+          const useFirstImage = Math.random() < 0.5;
+          explosions.push({
+            x: ship.x + ship.width / 2,
+            y: ship.y + ship.height / 2,
+            width: ship.width,
+            height: ship.height,
+            frame: 0,
+            useFirstImage
+          });
+          // 2秒後にゲームオーバー画面を表示
+          gameOverTimeout = setTimeout(displayFinalScore, 2000);
+        }
+      });
+
+      enemyBullets.forEach((bullet, bulletIndex) => {
+        if (
+          bullet.x < ship.x + ship.width &&
+          bullet.x + bullet.width > ship.x &&
+          bullet.y < ship.y + ship.height &&
+          bullet.y + bullet.height > ship.y
+        ) {
+          // 敵の弾が自機に当たったときの処理
+          gameOver = true;
+          // ランダムに爆発画像を選択し、爆発の大きさを自機のサイズにリサイズ
+          const useFirstImage = Math.random() < 0.5;
+          explosions.push({
+            x: ship.x + ship.width / 2,
+            y: ship.y + ship.height / 2,
+            width: ship.width,
+            height: ship.height,
+            frame: 0,
+            useFirstImage
+          });
+          // 2秒後にゲームオーバー画面を表示
+          gameOverTimeout = setTimeout(displayFinalScore, 2000);
+        }
+      });
+    }
+
+    function updateScore() {
+      document.getElementById("scoreDisplay").innerText = `スコア: ${score}`;
+    }
+
+    function displayFinalScore() {
+      const finalScoreElement = document.getElementById("finalScore");
+      finalScoreElement.innerText = `GAME OVER\nSCORE: ${score}`;
+      finalScoreElement.style.display = "block";
+    }
+
+    function update() {
+      if (gameOver && explosions.length === 0) {
+        cancelAnimationFrame(animationFrameId);
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawStars();
+
+      if (!gameOver) {
+        ship.x += ship.dx;
+        if (ship.x < 0) ship.x = 0;
+        if (ship.x + ship.width > canvas.width) ship.x = canvas.width - ship.width;
+
+        drawShip();
+      }
+
+      drawBullets();
+      drawEnemyBullets();
+      drawEnemies();
+      drawExplosions(); // 爆発エフェクトを描画
+      createEnemies();
+      detectCollisions();
+
+      animationFrameId = requestAnimationFrame(update);
+    }
+
+    function startGame() {
+      gameOver = false;
+      score = 0;
+      ship = { x: shipX, y: shipY, width: shipWidth, height: shipHeight, dx: 0 };
+      bullets = [];
+      enemyBullets = [];
+      enemies = [];
+      explosions = [];
+      document.getElementById("finalScore").style.display = "none";
+      clearTimeout(gameOverTimeout); // 既存のタイムアウトをクリア
+      cancelAnimationFrame(animationFrameId); // 既存のアニメーションフレームをキャンセル
+      update();
+    }
+
+    // ゲーム開始準備
+    document.addEventListener("DOMContentLoaded", (event) => {
+      drawStars();
+      resizeCanvas();
+    });
+  </script>
+</body>
+</html>
